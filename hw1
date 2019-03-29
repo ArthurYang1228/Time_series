@@ -1,0 +1,125 @@
+library(xlsx)
+Table_Names = "C:\\Users\\sunlite\\Desktop\\107下課程\\Data Files.xls"
+data = read.xlsx(file=Table_Names,sheetIndex="B.6-GSAT-CO2",startRow = 4,
+          header = T,colIndex =1:3,encoding = "UTF-8")
+plot(acf(data[,3]), main="CO2 ACF")
+plot(data[,3])
+library(ctmm)
+
+target_data = data[,2]
+
+var_with_lag_k = function(target_data, lag){
+  len = length(target_data)
+  sum = 0
+  i = 1
+  k = lag
+  avg = 0
+  
+  while(T){
+    sum = (sum + target_data[i+k] - target_data[i])
+    if(i+k >= len){
+      
+      break
+    }
+    i = i+1
+  }
+  
+  avg = sum/(len-k)
+  i=1
+  sum = 0
+  while(T){
+    sum = sum+ (target_data[i+k] - target_data[i]-avg)**2
+    if(i+k >= len){
+      break
+    }
+    i = i+1
+  }
+  return(sum/(len-k-1))
+}
+
+make_variogram = function(target_data, lag){
+variogram = array()
+k = lag
+var_1 = var_with_lag_k(target_data,1)
+for(i in 1:k){
+  
+  variogram[i] = var_with_lag_k(target_data,i)/var_1
+}
+  return(variogram)
+}
+
+orig_data = data[,2]
+diffenence = array()
+for(i in 1:124){
+  diffenence[i] = orig_data[i+1] -  orig_data[i] 
+}
+
+
+target_data = diffenence
+variogram = make_variogram(target_data, lag = 60) 
+plot(acf(diffenence), main = "Anomaly_diff ACF")
+
+data2 = read.xlsx(file=Table_Names,sheetIndex="B.22-CRUDEOIL",startRow = 22:33,
+                 header = F,colIndex =1:14,encoding = "UTF-8")
+data2[1,14]
+tem_data = array()
+n= 1
+for(i in 1:14){
+  for(j in 1:12){
+    if(i==14 & j>4){
+      print(j)
+      break
+    }
+    else{
+      tem_data[n] = data2[j,i]
+      n = n+1
+    }
+    
+  }
+}
+
+tem_data[157] = 675
+tem_data[158] = 637
+tem_data[159] = 691
+tem_data[160] = 659
+data2 = tem_data 
+
+orig_data = data2
+diffenence = array()
+for(i in 1:159){
+  diffenence[i] = orig_data[i+1] -  orig_data[i] 
+}
+plot(diffenence, main="diff_data_plot")
+plot(acf(diffenence), main="diff_data_acf_plot")
+plot(make_variogram(diffenence, lag = 60) , main="diff_data_variogram_plot")
+data2
+six_period_difference = array()
+for(i in 6:159){
+  sum = 0
+  for(j in 0:5){
+    sum = sum+diffenence[i-j]
+  }
+  six_period_difference[i] = sum/6
+}
+plot(six_period_difference)
+
+library(ggplot2) 
+op=par(mfrow=c(1,2))
+
+par(fig=c(0, 0.8, 0, 0.8), new=TRUE)
+ggplot(diffenence, aes(x=index, y = data))  + geom_point()
+
+par(fig=c(0, 0.8, 0.2, 0.6))
+ggplot(six_data, aes(x=index, y = data)) + geom_line() + geom_point()
+par(op)
+
+opar <- par(mfrow=c(1,2))
+
+par(mar=c(0.5, 4.5, 0.5, 0.5))
+plot(diffenence)
+par(mar=c(2.5, 2.5, 0.5, 0.5))
+plot(six_data,type="l")
+par(opar)
+
+six_data = data.frame(index=1:159,data = six_period_difference)
+diffenence = data.frame(index=1:159,data = diffenence)
